@@ -8,3 +8,24 @@ them. Some meta-data (e.g. the podcast name) is in the file name itself, so the 
 
 import numpy as np
 import pandas as pd
+from types import * # types is safe for import *
+
+DATA_FOLDER = 'G:/My Drive/Podcast/PNB/data/'
+OUTPUT_FOLDER = DATA_FOLDER + 'formatted/'
+
+
+def import_total_plays(path, source):
+    """
+    Import a "total plays" file.
+    :param path: str, path to file
+    :param source: str, source of the file, e.g. 'Anchor'.
+    :return: pandas dataframe with columns 'time' and 'plays', with '1D' interval.
+    """
+
+    sources_list = ['Anchor']
+
+    assert type(path) is StringType, 'path must be a string: %r' % path
+    assert type(source) is StringType, 'source must be a string: %r' % source
+    assert source in sources_list, 'Source %r not implemented. Make sure the spelling is correct.' % source
+
+if __name__ == '__main__':
