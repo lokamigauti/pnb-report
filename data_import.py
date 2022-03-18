@@ -8,13 +8,22 @@ them. Some meta-data (e.g. the podcast name) is in the file name itself, so the 
 
 import numpy as np
 import pandas as pd
+import datetime as dt
 from datetime import datetime
 import glob
 import re
 
 DATA_FOLDER = 'G:/My Drive/Podcast/PNB/data/'
-DATA_FOLDER = 'C:/Users/Pedro/Desktop/Data analisys Podcast/data/'
+#DATA_FOLDER = 'C:/Users/Pedro/Desktop/Data analisys Podcast/data/'
 OUTPUT_FOLDER = DATA_FOLDER + 'formatted/'
+
+
+def debug_time(date_str):
+    if date_str[9:11] != '24':
+        return pd.to_datetime(date_str, format='%m/%d/%Y %H:%M:%S')
+
+    date_str = date_str[0:9] + '00' + date_str[11:]
+    return pd.to_datetime(date_str, format='%m/%d/%Y %H:%M:%S') + dt.timedelta(days=1)
 
 
 def import_total_plays(path, source):
@@ -27,37 +36,148 @@ def import_total_plays(path, source):
 
     sources_list = ['test', 'Anchor']
 
-    assert type(path) is str, 'path must be a string: %r' % path
-    assert type(source) is str, 'source must be a string: %r' % source
+    assert type(path) == str, 'path must be a string: %r' % path
+    assert type(source) == str, 'source must be a string: %r' % source
     assert source in sources_list, 'Source %r not implemented. Make sure the spelling is correct.' % source
 
-    if source is 'test':
-        total_plays = None
+    if source == 'test':
+        data = None
 
-    if source is 'Anchor':
+    if source == 'Anchor':
         # by default, %H is 00-23, however we do not need the time info as it is daily.
         anchor_date_parser = lambda x: datetime.strptime(x, '%m/%d/%Y 24:00:00')
-        total_plays = pd.read_csv(path, names=['time', 'plays'], header=0, parse_dates=['time'],
-                                  date_parser=anchor_date_parser)
+        data = pd.read_csv(path, names=['time', 'plays'], header=0, parse_dates=['time'],
+                           date_parser=anchor_date_parser)
 
-    return total_plays
+    return data
+
+
+def import_top_eps(path, source):
+    """
+    Import a "top episodes" file.
+    :param path: str, path to file
+    :param source: str, source of the file, e.g. 'Anchor'.
+    :return: pandas dataframe with columns 'time' and 'plays', with '1D' interval.
+    """
+
+    sources_list = ['test', 'Anchor']
+
+    assert type(path) == str, 'path must be a string: %r' % path
+    assert type(source) == str, 'source must be a string: %r' % source
+    assert source in sources_list, 'Source %r not implemented. Make sure the spelling is correct.' % source
+
+    if source == 'test':
+        data = None
+
+    if source == 'Anchor':
+        data = pd.read_csv(path, names=['title', 'plays', 'time'], header=0)
+        data.time = data.time.apply(debug_time)
+
+    return data
+
+
+def import_plays_by_device(path, source):
+    """
+    Import a "plays by devices" file.
+    :param path: str, path to file
+    :param source: str, source of the file, e.g. 'Anchor'.
+    :return: pandas dataframe with columns 'time' and 'plays', with '1D' interval.
+    """
+
+    sources_list = ['test', 'Anchor']
+
+    assert type(path) == str, 'path must be a string: %r' % path
+    assert type(source) == str, 'source must be a string: %r' % source
+    assert source in sources_list, 'Source %r not implemented. Make sure the spelling is correct.' % source
+
+    if source == 'test':
+        data = None
+
+    if source == 'Anchor':
+        data = pd.read_csv(path, names=['device', 'plays_perc'], header=0)
+
+    return data
+
+
+def import_plays_by_app(path, source):
+    """
+    Import a "plays by app" file.
+    :param path: str, path to file
+    :param source: str, source of the file, e.g. 'Anchor'.
+    :return: pandas dataframe with columns 'time' and 'plays', with '1D' interval.
+    """
+
+    sources_list = ['test', 'Anchor']
+
+    assert type(path) == str, 'path must be a string: %r' % path
+    assert type(source) == str, 'source must be a string: %r' % source
+    assert source in sources_list, 'Source %r not implemented. Make sure the spelling is correct.' % source
+
+    if source == 'test':
+        data = None
+
+    if source == 'Anchor':
+        data = pd.read_csv(path, names=['app', 'plays_perc'], header=0)
+
+    return data
+
+
+def import_geolocation(path, source):
+    """
+    Import a "geolocation" file.
+    :param path: str, path to file
+    :param source: str, source of the file, e.g. 'Anchor'.
+    :return: pandas dataframe with columns 'time' and 'plays', with '1D' interval.
+    """
+
+    sources_list = ['test', 'Anchor']
+
+    assert type(path) == str, 'path must be a string: %r' % path
+    assert type(source) == str, 'source must be a string: %r' % source
+    assert source in sources_list, 'Source %r not implemented. Make sure the spelling is correct.' % source
+
+    if source == 'test':
+        data = None
+
+    if source == 'Anchor':
+        data = pd.read_csv(path, names=['location', 'plays_perc'], header=0)
+
+    return data
 
 
 def identify_source_and_content():
-
-    # Regular Expressions patterns
-    totalplays_pattern = re.compile()
-
     filepaths = glob.glob(DATA_FOLDER + '*.csv')
-    files = np.empty((len(filepaths), 3))
+    files = np.empty((len(filepaths), 4))
     for n, filepath in enumerate(filepaths):
 
+        source = None
+        content = None
+        if re.search('TotalPlays_all-time', filepath):
+            source = 'Anchor'
+            content = import_total_plays(filepath, source)
+            podcast = re.match('(?<=\\\\)(.*)(?=_TotalPlays_all-timee)', filepath)
+        if re.search('TopEpisodes_all-time', filepath):
+            source = 'Anchor'
+            content = import_top_eps(filepath, source)
+            podcast = re.match('(?<=\\\\)(.*)(?=_TopEpisodes_all-time)', filepath)
+        if re.search('PlaysByDevice_all-time', filepath):
+            source = 'Anchor'
+            content = import_plays_by_device(filepath, source)
+            podcast = re.match('(?<=\\\\)(.*)(?=_PlaysByDevice_all-time)', filepath)
+        if re.search('PlaysByApp_all-time', filepath):
+            source = 'Anchor'
+            content = import_plays_by_app(filepath, source)
+            podcast = re.match('(?<=\\\\)(.*)(?=_PlaysByApp_all-time)', filepath)
+        if re.search('GeoLocation_all-time', filepath):
+            source = 'Anchor'
+            content = import_geolocation(filepath, source)
+            podcast = re.match('(?<=\\\\)(.*)(?=_GeoLocation_all-time)', filepath)
 
+        files[n, 0] = filepath
+        files[n, 1] = podcast
+        files[n, 2] = content
+        files[n, 3] = source
 
-        files[0] = filepath
-        files[1] = content
-        files[2] = source
 
 if __name__ == '__main__':
-
-    total_plays = import_total_plays(DATA_FOLDER + 'Dropzilla_TotalPlays_all-time.csv', 'Anchor')
+    total_plays = import_plays_by_device(DATA_FOLDER + 'Dropzilla_PlaysByDevice_all-time.csv', 'Anchor')
