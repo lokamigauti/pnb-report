@@ -147,7 +147,7 @@ def import_geolocation(path, source):
 
 def identify_source_and_content():
     filepaths = glob.glob(DATA_FOLDER + '*.csv')
-    files = np.empty((len(filepaths), 4))
+    files = []
     for n, filepath in enumerate(filepaths):
 
         source = None
@@ -155,29 +155,29 @@ def identify_source_and_content():
         if re.search('TotalPlays_all-time', filepath):
             source = 'Anchor'
             content = import_total_plays(filepath, source)
-            podcast = re.match('(?<=\\\\)(.*)(?=_TotalPlays_all-timee)', filepath)
+            podcast = re.search('(?<=\\\\)(.*)(?=_TotalPlays_all-time)', filepath).group(1)
         if re.search('TopEpisodes_all-time', filepath):
             source = 'Anchor'
             content = import_top_eps(filepath, source)
-            podcast = re.match('(?<=\\\\)(.*)(?=_TopEpisodes_all-time)', filepath)
+            podcast = re.search('(?<=\\\\)(.*)(?=_TopEpisodes_all-time)', filepath).group(1)
         if re.search('PlaysByDevice_all-time', filepath):
             source = 'Anchor'
             content = import_plays_by_device(filepath, source)
-            podcast = re.match('(?<=\\\\)(.*)(?=_PlaysByDevice_all-time)', filepath)
+            podcast = re.search('(?<=\\\\)(.*)(?=_PlaysByDevice_all-time)', filepath).group(1)
         if re.search('PlaysByApp_all-time', filepath):
             source = 'Anchor'
             content = import_plays_by_app(filepath, source)
-            podcast = re.match('(?<=\\\\)(.*)(?=_PlaysByApp_all-time)', filepath)
+            podcast = re.search('(?<=\\\\)(.*)(?=_PlaysByApp_all-time)', filepath).group(1)
         if re.search('GeoLocation_all-time', filepath):
             source = 'Anchor'
             content = import_geolocation(filepath, source)
-            podcast = re.match('(?<=\\\\)(.*)(?=_GeoLocation_all-time)', filepath)
+            podcast = re.search('(?<=\\\\)(.*)(?=_GeoLocation_all-time)', filepath).group(1)
 
-        files[n, 0] = filepath
-        files[n, 1] = podcast
-        files[n, 2] = content
-        files[n, 3] = source
+        data = [filepath, podcast, content, source]
+        files.append(data)
+
+    return files
 
 
 if __name__ == '__main__':
-    total_plays = import_plays_by_device(DATA_FOLDER + 'Dropzilla_PlaysByDevice_all-time.csv', 'Anchor')
+    files = identify_source_and_content()
