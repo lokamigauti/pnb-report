@@ -12,6 +12,7 @@ import datetime as dt
 from datetime import datetime
 import glob
 import re
+import pickle
 
 DATA_FOLDER = 'G:/My Drive/Podcast/PNB/data/'
 #DATA_FOLDER = 'C:/Users/Pedro/Desktop/Data analisys Podcast/data/'
@@ -193,7 +194,14 @@ def aggregate_data(files):
         for n_podcast in range(len(content_file)):
             content_file[n_podcast, 4]['podcast'] = content_file[n_podcast, 1]
         data[content] = pd.concat(content_file[:, 4])
-
+    return data
 
 if __name__ == '__main__':
-    files = identify_source_and_content()
+    data = aggregate_data(identify_source_and_content())
+
+    with open(OUTPUT_FOLDER + 'data.pickle', 'wb') as f:
+        pickle.dump(data, f)
+
+    # To load the data:
+    # with open(OUTPUT_FOLDER + 'data.pickle') as f:
+    #     data = pickle.load(f)
