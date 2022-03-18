@@ -153,30 +153,46 @@ def identify_source_and_content():
         source = None
         content = None
         if re.search('TotalPlays_all-time', filepath):
+            content = 'TotalPlays'
             source = 'Anchor'
-            content = import_total_plays(filepath, source)
+            data = import_total_plays(filepath, source)
             podcast = re.search('(?<=\\\\)(.*)(?=_TotalPlays_all-time)', filepath).group(1)
         if re.search('TopEpisodes_all-time', filepath):
+            content = 'TopEpisodes'
             source = 'Anchor'
-            content = import_top_eps(filepath, source)
+            data = import_top_eps(filepath, source)
             podcast = re.search('(?<=\\\\)(.*)(?=_TopEpisodes_all-time)', filepath).group(1)
         if re.search('PlaysByDevice_all-time', filepath):
+            content = 'PlaysByDevice'
             source = 'Anchor'
-            content = import_plays_by_device(filepath, source)
+            data = import_plays_by_device(filepath, source)
             podcast = re.search('(?<=\\\\)(.*)(?=_PlaysByDevice_all-time)', filepath).group(1)
         if re.search('PlaysByApp_all-time', filepath):
+            content = 'PlaysByApp'
             source = 'Anchor'
-            content = import_plays_by_app(filepath, source)
+            data = import_plays_by_app(filepath, source)
             podcast = re.search('(?<=\\\\)(.*)(?=_PlaysByApp_all-time)', filepath).group(1)
         if re.search('GeoLocation_all-time', filepath):
+            content = 'GeoLocation'
             source = 'Anchor'
-            content = import_geolocation(filepath, source)
+            data = import_geolocation(filepath, source)
             podcast = re.search('(?<=\\\\)(.*)(?=_GeoLocation_all-time)', filepath).group(1)
 
-        data = [filepath, podcast, content, source]
-        files.append(data)
+        aggr = [filepath, podcast, content, source, data]
+        files.append(aggr)
 
-    return files
+    return np.array(files, dtype=object)
+
+
+def aggregate_data(files):
+    contents = np.unique(files[:, 2])
+    data = {}
+    for content in contents:
+        filter_arr = files[:, 2] == content
+        content_file = files[filter_arr, :]
+        for n_podcast in range(len(content_file)):
+            content_file[n_podcast, 4]['podcast'] = content_file[n_podcast, 1]
+        data[content] = pd.concat(content_file[:, 4])
 
 
 if __name__ == '__main__':
