@@ -8,8 +8,9 @@ them. Some meta-data (e.g. the podcast name) is in the file name itself, so the 
 
 import numpy as np
 import pandas as pd
-from types import * # types is safe for import *
 from datetime import datetime
+import glob
+import re
 
 DATA_FOLDER = 'G:/My Drive/Podcast/PNB/data/'
 OUTPUT_FOLDER = DATA_FOLDER + 'formatted/'
@@ -41,5 +42,21 @@ def import_total_plays(path, source):
     return total_plays
 
 
+def identify_source_and_content():
+
+    # Regular Expressions patterns
+    totalplays_pattern = re.compile()
+
+    filepaths = glob.glob(DATA_FOLDER + '*.csv')
+    files = np.empty((len(filepaths), 3))
+    for n, filepath in enumerate(filepaths):
+
+
+
+        files[0] = filepath
+        files[1] = content
+        files[2] = source
+
 if __name__ == '__main__':
+
     total_plays = import_total_plays(DATA_FOLDER + 'Dropzilla_TotalPlays_all-time.csv', 'Anchor')
