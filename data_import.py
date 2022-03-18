@@ -147,6 +147,11 @@ def import_geolocation(path, source):
 
 
 def identify_source_and_content():
+    """
+    Identify the source and content of the files in the data folder, import data and return a ndarray with the filepath,
+    podcast name, content type, source, and data itself.
+    :return: ndarray with data and metadata
+    """
     filepaths = glob.glob(DATA_FOLDER + '*.csv')
     files = []
     for n, filepath in enumerate(filepaths):
@@ -186,6 +191,12 @@ def identify_source_and_content():
 
 
 def aggregate_data(files):
+    """
+    Aggregate data from identify_source_and_content() by content, creating the variable "podcast". Returns a dict with
+    content in keys and pd.dataframes in values.
+    :param files: ndarray from identify_source_and_content()
+    :return: dict of pd.dataframes
+    """
     contents = np.unique(files[:, 2])
     data = {}
     for content in contents:
