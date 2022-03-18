@@ -12,6 +12,7 @@ from types import * # types is safe for import *
 from datetime import datetime
 
 DATA_FOLDER = 'G:/My Drive/Podcast/PNB/data/'
+DATA_FOLDER = 'C:/Users/Pedro/Desktop/Data analisys Podcast/data/'
 OUTPUT_FOLDER = DATA_FOLDER + 'formatted/'
 
 
