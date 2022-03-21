@@ -13,11 +13,16 @@ from datetime import datetime
 import glob
 import re
 import pickle
+import spotipy
+from spotipy.oauth2 import SpotifyOAuth
+import os
 
 DATA_FOLDER = 'G:/My Drive/Podcast/PNB/data/'
-#DATA_FOLDER = 'C:/Users/Pedro/Desktop/Data analisys Podcast/data/'
+# DATA_FOLDER = 'C:/Users/Pedro/Desktop/Data analisys Podcast/data/'
 OUTPUT_FOLDER = DATA_FOLDER + 'formatted/'
-
+os.environ['SPOTIPY_CLIENT_ID'] = 'f001dec668494347ad43adb1accd9097'
+os.environ['SPOTIPY_CLIENT_SECRET'] = 'c215e7661e3f40b4992c5dbd29fa696f'
+os.environ['SPOTIPY_REDIRECT_URI'] = 'http://localhost'
 
 def debug_time(date_str):
     if date_str[9:11] != '24':
@@ -207,12 +212,43 @@ def aggregate_data(files):
         data[content] = pd.concat(content_file[:, 4])
     return data
 
+
+def import_spotify_meta():
+    scope = 'user-read-playback-position'
+    spotify = spotipy.Spotify(client_credentials_manager=SpotifyOAuth(scope=scope))
+    spotify_meta = pd.DataFrame(
+        columns=['ep_name', 'ep_release_date', 'ep_description', 'ep_duration_ms', 'ep_images', 'podcast'])
+    metadata = pd.read_csv(DATA_FOLDER + 'spotify_meta.txt')
+    for podcast in metadata['podcast']:
+        podcast_meta = []
+        podcast_id = metadata.loc[metadata['podcast'] == podcast].podcast_id.values[0]
+        results = spotify.show_episodes(podcast_id)
+        eps = results['items']
+        while results['next']:
+            results = spotify.next(results)
+            eps.extend(results['items'])
+        for ep in eps:
+            ep_meta = [ep['name'], ep['release_date'], ep['description'], ep['duration_ms'], ep['images']]
+            podcast_meta.append(ep_meta)
+        podcast_meta = pd.DataFrame(podcast_meta,
+                                    columns=['ep_name', 'ep_release_date', 'ep_description', 'ep_duration_ms',
+                                             'ep_images'])
+        podcast_meta['podcast'] = podcast
+        spotify_meta = pd.concat([spotify_meta, podcast_meta], ignore_index=True)
+    return spotify_meta
+
+
 if __name__ == '__main__':
     data = aggregate_data(identify_source_and_content())
+
+    meta = import_spotify_meta()
 
     with open(OUTPUT_FOLDER + 'data.pickle', 'wb') as f:
         pickle.dump(data, f)
 
+    with open(OUTPUT_FOLDER + 'meta.pickle', 'wb') as f:
+        pickle.dump(meta, f)
+
     # To load the data:
-    # with open(OUTPUT_FOLDER + 'data.pickle') as f:
+    # with open(OUTPUT_FOLDER + 'data.pickle', 'rb') as f:
     #     data = pickle.load(f)
