@@ -21,14 +21,14 @@ DATA_FOLDER = 'G:/My Drive/Podcast/PNB/data/'
 # DATA_FOLDER = 'C:/Users/Pedro/Desktop/Data analisys Podcast/data/'
 OUTPUT_FOLDER = DATA_FOLDER + 'formatted/'
 os.environ['SPOTIPY_CLIENT_ID'] = 'f001dec668494347ad43adb1accd9097'
-os.environ['SPOTIPY_CLIENT_SECRET'] = 'c215e7661e3f40b4992c5dbd29fa696f'
+os.environ['SPOTIPY_CLIENT_SECRET'] = 'INSERT_SECRET'
 os.environ['SPOTIPY_REDIRECT_URI'] = 'http://localhost'
 
 def debug_time(date_str):
-    if date_str[9:11] != '24':
+    if date_str[-8:-6] != '24':
         return pd.to_datetime(date_str, format='%m/%d/%Y %H:%M:%S')
 
-    date_str = date_str[0:9] + '00' + date_str[11:]
+    date_str = date_str[:-8] + '00' + date_str[-6:]
     return pd.to_datetime(date_str, format='%m/%d/%Y %H:%M:%S') + dt.timedelta(days=1)
 
 
@@ -240,7 +240,6 @@ def import_spotify_meta():
 
 if __name__ == '__main__':
     data = aggregate_data(identify_source_and_content())
-
     meta = import_spotify_meta()
 
     with open(OUTPUT_FOLDER + 'data.pickle', 'wb') as f:
