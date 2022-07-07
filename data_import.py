@@ -21,7 +21,7 @@ DATA_FOLDER = 'G:/My Drive/Podcast/PNB/data/'
 # DATA_FOLDER = 'C:/Users/Pedro/Desktop/Data analisys Podcast/data/'
 OUTPUT_FOLDER = DATA_FOLDER + 'formatted/'
 os.environ['SPOTIPY_CLIENT_ID'] = 'f001dec668494347ad43adb1accd9097'
-os.environ['SPOTIPY_CLIENT_SECRET'] = 'INSERT_SECRET'
+os.environ['SPOTIPY_CLIENT_SECRET'] = 'c215e7661e3f40b4992c5dbd29fa696f'
 os.environ['SPOTIPY_REDIRECT_URI'] = 'http://localhost'
 
 def debug_time(date_str):

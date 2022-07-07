@@ -6,6 +6,7 @@ from statsmodels.nonparametric.kernel_regression import KernelReg
 import itertools
 import datetime as dt
 import matplotlib.dates as mdates
+from sklearn import preprocessing
 
 DATA_FOLDER = 'G:/My Drive/Podcast/PNB/data/formatted/'
 
@@ -84,6 +85,11 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
 
 
 if __name__ == '__main__':
+    podcast_colours = {'Dropzilla': '#C5252C',
+                       'Wasabicast': '#02AF7E',
+                       'PressStartCast': '#117C91',
+                       'NoJapao': '#FF3A11'}
+    data_hand = pd.read_csv(DATA_FOLDER + 'data_handextracted.csv')
     with open(DATA_FOLDER + 'data.pickle', 'rb') as f:
         data = pickle.load(f)
     with open(DATA_FOLDER + 'meta.pickle', 'rb') as f:
@@ -91,16 +97,13 @@ if __name__ == '__main__':
     meta.ep_release_date = pd.to_datetime(meta.ep_release_date)
     data['TotalPlays'] = data['TotalPlays'].sort_values(by=['podcast', 'time'])
     podcasts = data['TotalPlays'].podcast.unique()
+
     rolls = []
     for podcast in podcasts:
         roll = data['TotalPlays'].loc[data['TotalPlays'].podcast == podcast].plays.rolling(window=7).mean()
         rolls.append(roll)
     rolls = list(itertools.chain.from_iterable(rolls))
     data['TotalPlays']['plays_rolling_mean'] = rolls
-
-    podcast_colours = {'Dropzilla': '#C5252C',
-                       'Wasabicast': '#02AF7E',
-                       'PressStartCast': '#117C91'}
 
     plays_smooth_golay = []
     for podcast in podcasts:
@@ -119,6 +122,30 @@ if __name__ == '__main__':
         plays_smoothed, std = kr[n].fit(data['TotalPlays'].loc[data['TotalPlays'].podcast == podcast].time.map(dt.datetime.toordinal))
         plays_smooth.append(plays_smoothed)
     data['TotalPlays']['plays_smooth'] = list(itertools.chain.from_iterable(plays_smooth))
+
+    norm = []
+    for podcast in podcasts:
+        minmaxscaler = preprocessing.MinMaxScaler()
+        plays = data['TotalPlays'].loc[data['TotalPlays'].podcast == podcast].plays.values.reshape(-1, 1)
+        normed = minmaxscaler.fit_transform(plays).reshape(1,-1)[0]
+        norm.append(normed)
+    data['TotalPlays']['plays_norm'] = list(itertools.chain.from_iterable(norm))
+
+    norm = []
+    for podcast in podcasts:
+        minmaxscaler = preprocessing.MinMaxScaler()
+        plays = data['TotalPlays'].loc[data['TotalPlays'].podcast == podcast].plays_rolling_mean.values.reshape(-1, 1)
+        normed = minmaxscaler.fit_transform(plays).reshape(1,-1)[0]
+        norm.append(normed)
+    data['TotalPlays']['plays_rolling_mean_norm'] = list(itertools.chain.from_iterable(norm))
+
+    norm = []
+    for podcast in podcasts:
+        minmaxscaler = preprocessing.MinMaxScaler()
+        plays = data['TotalPlays'].loc[data['TotalPlays'].podcast == podcast].plays_smooth_golay.values.reshape(-1, 1)
+        normed = minmaxscaler.fit_transform(plays).reshape(1,-1)[0]
+        norm.append(normed)
+    data['TotalPlays']['plays_smooth_golay_norm'] = list(itertools.chain.from_iterable(norm))
 
     plt.figure()
     for podcast in podcasts:
@@ -148,9 +175,6 @@ if __name__ == '__main__':
     plt.gca().spines['right'].set_visible(False)
     plt.show()
 
-
-
-
     plt.figure()
     for podcast in podcasts:
         ep_date = meta.loc[meta.podcast == podcast].sort_values(by='ep_release_date').ep_release_date
@@ -167,7 +191,7 @@ if __name__ == '__main__':
     for size in sizes:
         plt.scatter(x=[], y=[], s=(size), c='k', label=str(size))
     h, l = plt.gca().get_legend_handles_labels()
-    plt.legend(h[:], l[:], labelspacing=0.5, title="Duration (min)", borderpad=0,
+    plt.legend(h[:], l[:], labelspacing=0.5, title="Duration (min)", borderpad=0.5,
                frameon=True, framealpha=0.3, loc=4, numpoints=1)
     plt.gca().add_artist(leg_pod)
     plt.gca().xaxis.remove_overlapping_locs = False
@@ -182,3 +206,72 @@ if __name__ == '__main__':
     plt.gca().spines['top'].set_visible(False)
     plt.gca().spines['right'].set_visible(False)
     plt.show()
+
+    plt.figure()
+    # for podcast in podcasts:
+    #     data['TotalPlays'].loc[data['TotalPlays'].podcast == podcast].set_index('time').plays_rolling_mean_norm.plot(
+    #         c=podcast_colours[podcast], alpha=0.3)
+    # for podcast in podcasts:
+    #     data['TotalPlays'].loc[data['TotalPlays'].podcast == podcast].set_index('time').plays_smooth.plot(
+    #         c=podcast_colours[podcast])
+    for podcast in podcasts:
+        data['TotalPlays'].loc[data['TotalPlays'].podcast == podcast].set_index('time').plays_smooth_golay_norm.plot(
+            c=podcast_colours[podcast])
+    # for podcast in podcasts:
+    #     for release in meta.loc[meta.podcast == podcast].ep_release_date:
+    #         plt.axvline(pd.Timestamp(release), color=podcast_colours[podcast], alpha=0.2)
+    plt.axvspan(xmin=pd.Timestamp('2021-12-06'), xmax=pd.Timestamp('2021-12-11'), color='black', alpha=0.2)
+    plt.text(pd.Timestamp('2021-12-06'), plt.gca().get_ylim()[1], 'First PNB Week',
+             rotation=90, verticalalignment='top')
+    plt.axvline(x=pd.Timestamp('2021-11-01'), color='black')
+    plt.text(pd.Timestamp('2021-11-01'), plt.gca().get_ylim()[1], 'First Post of PNB on Instagram',
+             rotation=90, verticalalignment='top')
+    plt.legend(podcasts)
+    plt.ylabel('Normalized Plays (smoothed and 7 days mov. avg.)')
+    plt.xlabel('')
+    plt.ylim(0)
+    plt.tight_layout()
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
+    plt.show()
+
+    plt.figure()
+    for podcast in podcasts:
+        ep_date = meta.loc[meta.podcast == podcast].sort_values(by='ep_release_date').ep_release_date
+        y = data['TotalPlays'].loc[data['TotalPlays'].podcast == podcast] \
+            .merge(ep_date.rename('time'), on=['time'], how='right').set_index('time').plays_smooth_golay_norm
+        ep_duration = meta.loc[meta.podcast == podcast].sort_values(by='ep_release_date').set_index('ep_release_date') \
+            .ep_duration_ms
+        df = pd.concat([y, ep_duration], axis=1)
+        df['ep_duration_ms'] = pd.to_numeric(df.ep_duration_ms) / (1000 * 60)
+        sc = df.reset_index().plot(kind='scatter', x='index', y='plays_smooth_golay_norm', s='ep_duration_ms',
+                                   c=podcast_colours[podcast],
+                                   ax=plt.gca(), alpha=0.5)
+    leg_pod = plt.legend(podcasts)
+    sizes = (pd.cut(df.ep_duration_ms, bins=4, retbins=True)[1]).round()
+    for size in sizes:
+        plt.scatter(x=[], y=[], s=(size), c='k', label=str(size))
+    h, l = plt.gca().get_legend_handles_labels()
+    plt.legend(h[:], l[:], labelspacing=0.5, title="Duration (min)", borderpad=0.5,
+               frameon=True, framealpha=0.3, loc=4, numpoints=1)
+    plt.gca().add_artist(leg_pod)
+    plt.axvspan(xmin=pd.Timestamp('2021-12-06'), xmax=pd.Timestamp('2021-12-11'), color='black', alpha=0.2)
+    plt.text(pd.Timestamp('2021-12-06'), plt.gca().get_ylim()[1], 'First PNB Week',
+             rotation=90, verticalalignment='top')
+    plt.axvline(x=pd.Timestamp('2021-11-01'), color='black')
+    plt.text(pd.Timestamp('2021-11-01'), plt.gca().get_ylim()[1], 'First Post of PNB on Instagram',
+             rotation=90, verticalalignment='top')
+    plt.gca().xaxis.remove_overlapping_locs = False
+    plt.gca().xaxis.set_minor_formatter(mdates.DateFormatter('%b'))
+    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('\n%Y'))
+    plt.gca().xaxis.set_major_locator(mdates.YearLocator())
+    plt.gca().xaxis.set_minor_locator(mdates.MonthLocator(bymonth=[1, 4, 7, 10]))
+    plt.ylabel('Normalized Plays (smoothed)')
+    plt.xlabel('')
+    plt.ylim(0)
+    plt.tight_layout()
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['right'].set_visible(False)
+    plt.show()
+
+
